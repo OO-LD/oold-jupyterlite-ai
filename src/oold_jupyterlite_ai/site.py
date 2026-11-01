@@ -49,9 +49,12 @@ class Site:
     skills: Path | None = None
     lite_config: Path = SITE / "jupyter-lite.json"
     piplite_requirements: Path = SITE / "piplite-requirements.txt"
-    #: Wheels built from a checkout rather than pulled from an index. oold tracks a branch,
-    #: so the site is built against source rather than against a release.
+    #: A checkout to build the oold wheel from. Unset means the released wheel is pulled
+    #: from PyPI instead, which is what someone cloning this repo gets without also
+    #: cloning oold-python. Set it to track a branch ahead of the last release.
     oold_src: Path | None = None
+    #: What to download when there is no checkout. A specifier, so a flavour can pin.
+    oold_requirement: str = "oold"
     #: Paths inside the oold wheel that have to exist. Emscripten has no subprocess, so the
     #: site drives the CLI in-process and validation imports its format checkers eagerly.
     assert_wheel_contains: list[str] = field(
@@ -180,15 +183,30 @@ class Site:
         built: list[Path] = []
         wheels.mkdir(parents=True, exist_ok=True)
 
+        for stale in wheels.glob("oold-*.whl"):
+            stale.unlink()
+
         if self.oold_src is not None:
             src = Path(self.oold_src).resolve()
+            if not (src / "pyproject.toml").is_file():
+                raise SystemExit(f"OOLD_SRC points at {src}, which is not an oold checkout")
             print(f"== building oold wheel from {src} ==")
-            for stale in wheels.glob("oold-*.whl"):
-                stale.unlink()
             _run([py, "-m", "build", "--wheel", "--no-isolation", "--outdir", str(wheels)], cwd=src)
-            wheel = sorted(wheels.glob("oold-*.whl"))[0]
-            self._assert_wheel(wheel)
-            built.append(wheel)
+        else:
+            # Downloaded rather than left to the kernel: the wheel is vendored into the
+            # site like every other, so a cold start still reaches no index.
+            print(f"== downloading {self.oold_requirement} from PyPI ==")
+            _run([
+                py, "-m", "pip", "download", self.oold_requirement,
+                "--dest", str(wheels), "--no-deps", "--only-binary=:all:",
+                "--platform", "any", "--python-version", "3.14", "--implementation", "py", "--quiet",
+            ])
+
+        found = sorted(wheels.glob("oold-*.whl"))
+        if not found:
+            raise SystemExit(f"no oold wheel in {wheels}")
+        self._assert_wheel(found[0])
+        built.append(found[0])
 
         pyodide_version = subprocess.run(
             [py, "-c", "from jupyterlite_pyodide_kernel.constants import PYODIDE_VERSION; print(PYODIDE_VERSION)"],

@@ -16,7 +16,8 @@ config can be read from anywhere. Anything this cannot express is a reason to im
     extra        = ["brief/house-rules.md"]
 
     [wheels]
-    oold_src     = "../oold-python"
+    oold         = "oold>=2.3"        # downloaded from PyPI unless OOLD_SRC is set
+    oold_src     = "../oold-python"   # optional; OOLD_SRC in the environment wins
     requirements = "piplite-requirements.txt"
 
     [extension]
@@ -25,6 +26,7 @@ config can be read from anywhere. Anything this cannot express is a reason to im
 
 from __future__ import annotations
 
+import os
 import tomllib
 from pathlib import Path
 
@@ -40,6 +42,21 @@ def _text(root: Path, value: str | None) -> str:
         return ""
     candidate = root / value
     return candidate.read_text(encoding="utf-8") if candidate.is_file() else value
+
+
+def _oold_src(root: Path, wheels_cfg: dict) -> Path | None:
+    """Where the oold wheel comes from: the environment, then the file, then PyPI.
+
+    OOLD_SRC wins so one export switches a build onto a branch without editing a config
+    that is checked in. Unset and unconfigured means the released wheel is downloaded,
+    which is what a clone of this repo alone can do.
+    """
+    from_env = os.environ.get("OOLD_SRC", "").strip()
+    if from_env:
+        return Path(from_env).expanduser()
+    if "oold_src" in wheels_cfg:
+        return root / wheels_cfg["oold_src"]
+    return None
 
 
 def load(path: Path) -> Site:
@@ -80,7 +97,8 @@ def load(path: Path) -> Site:
             if "requirements" in wheels_cfg
             else SITE / "piplite-requirements.txt"
         ),
-        oold_src=(root / wheels_cfg["oold_src"]) if "oold_src" in wheels_cfg else None,
+        oold_src=_oold_src(root, wheels_cfg),
+        oold_requirement=wheels_cfg.get("oold", "oold"),
         assert_wheel_contains=list(
             wheels_cfg.get("assert_contains", ["oold/cli.py", "oold/validation/formats.py"])
         ),

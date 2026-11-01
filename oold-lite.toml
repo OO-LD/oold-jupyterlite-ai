@@ -18,7 +18,8 @@ closing = "src/oold_jupyterlite_ai/site/brief/closing.md"
 extra = ["src/oold_jupyterlite_ai/site/brief/demo-pull.md"]
 
 [wheels]
-oold_src = "../oold-python"
+# No oold_src: the released wheel is downloaded from PyPI. Export OOLD_SRC to
+# build from a checkout instead, which is what CI and local work against a branch do.
 requirements = "src/oold_jupyterlite_ai/site/piplite-requirements.txt"
 
 [extension]
