@@ -10,6 +10,7 @@
 
 import { chromium } from "playwright";
 import { spawn } from "node:child_process";
+import { fileURLToPath } from "node:url";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { randomUUID } from "node:crypto";
 
@@ -28,7 +29,10 @@ const SUITE_TIMEOUT = Number(process.env.SUITE_TIMEOUT ?? 1800000);
 const STUB_PORT = Number(process.env.STUB_PORT ?? 8921);
 const STUB = `http://127.0.0.1:${STUB_PORT}`;
 
-const ROOT = new globalThis.URL("../", import.meta.url).pathname.replace(/^\//, "");
+// fileURLToPath, not pathname: a file URL pathname is /C:/... on Windows and
+// /home/... on POSIX, so stripping the leading slash fixes the first and turns the
+// second into a relative path that resolves against the cwd.
+const ROOT = fileURLToPath(new globalThis.URL("../", import.meta.url));
 const ARTIFACTS = `${ROOT}artifacts`;
 const STUB_SCRIPT = `${ROOT}tests/fixtures/llm_stub.py`;
 const OVERRIDES_PATH = process.env.OVERRIDES ?? `${ROOT}.build/overrides.json`;

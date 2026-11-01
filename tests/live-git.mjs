@@ -18,6 +18,7 @@
 import { chromium } from "playwright";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { randomUUID } from "node:crypto";
+import { fileURLToPath } from "node:url";
 
 const BASE = process.env.BASE ?? "http://127.0.0.1:8902";
 const NB = process.env.NB ?? "start.ipynb";
@@ -27,7 +28,10 @@ const KERNEL_TIMEOUT = Number(process.env.KERNEL_TIMEOUT ?? 180000);
 const EXEC_TIMEOUT = Number(process.env.EXEC_TIMEOUT ?? 300000);
 const SUITE_TIMEOUT = Number(process.env.SUITE_TIMEOUT ?? 1800000);
 
-const ROOT = new globalThis.URL("../", import.meta.url).pathname.replace(/^\//, "");
+// fileURLToPath, not pathname: a file URL pathname is /C:/... on Windows and
+// /home/... on POSIX, so stripping the leading slash fixes the first and turns the
+// second into a relative path that resolves against the cwd.
+const ROOT = fileURLToPath(new globalThis.URL("../", import.meta.url));
 const ARTIFACTS = `${ROOT}artifacts`;
 
 const TOKEN = process.env.OOLD_GIT_TOKEN ?? "";

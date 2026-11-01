@@ -1,11 +1,15 @@
 import { chromium } from "playwright";
 import { writeFileSync, mkdirSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 
 const BASE = process.env.BASE ?? "http://127.0.0.1:8902";
 const PAGE_URL = `${BASE}/lab/index.html`;
 const HEADLESS = process.env.HEADED !== "1";
 const SUITE_TIMEOUT = Number(process.env.SUITE_TIMEOUT ?? 600000);
-const ARTIFACTS = new globalThis.URL("../artifacts/", import.meta.url).pathname.replace(/^\//, "");
+// fileURLToPath, not pathname: a file URL pathname is /C:/... on Windows and
+// /home/... on POSIX, so stripping the leading slash fixes the first and turns the
+// second into a relative path that resolves against the cwd.
+const ARTIFACTS = fileURLToPath(new globalThis.URL("../artifacts/", import.meta.url));
 
 const PLUGIN_ID = "oold-azure-providers:plugin";
 const DESCRIBE_COMMAND = "oold-azure-providers:describe";

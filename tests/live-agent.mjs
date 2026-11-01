@@ -22,6 +22,7 @@
 
 import { chromium } from "playwright";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 
 const BASE = process.env.BASE ?? "http://127.0.0.1:8902";
 const NB = process.env.NB ?? "start.ipynb";
@@ -33,7 +34,10 @@ const SETUP_TIMEOUT = Number(process.env.SETUP_TIMEOUT ?? 600000);
 const ANSWER_TIMEOUT = Number(process.env.ANSWER_TIMEOUT ?? 900000);
 const SUITE_TIMEOUT = Number(process.env.SUITE_TIMEOUT ?? 3600000);
 
-const ROOT = new globalThis.URL("../", import.meta.url).pathname.replace(/^\//, "");
+// fileURLToPath, not pathname: a file URL pathname is /C:/... on Windows and
+// /home/... on POSIX, so stripping the leading slash fixes the first and turns the
+// second into a relative path that resolves against the cwd.
+const ROOT = fileURLToPath(new globalThis.URL("../", import.meta.url));
 const ARTIFACTS = `${ROOT}artifacts`;
 // scripts/make_overrides.py strips the file and the build ships that, so the
 // comparison has to strip too. Newlines are normalised because a checkout with
