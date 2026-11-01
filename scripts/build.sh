@@ -4,7 +4,7 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 # Sibling checkout by default; the layout differs in CI, so allow an override.
-OOLD_SRC="${OOLD_SRC:-$(cd "$ROOT/../.." && pwd)/oold-python}"
+OOLD_SRC="${OOLD_SRC:-$(cd "$ROOT/.." && pwd)/oold-python}"
 
 if [ -x "$ROOT/.venv/Scripts/python.exe" ]; then
   PY="${PY:-$ROOT/.venv/Scripts/python.exe}"
