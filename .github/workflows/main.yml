@@ -38,21 +38,26 @@ jobs:
         with:
           python-version: "3.12"
 
-      # labextension/ is not tracked and pip does not build it: `npm run build` shells
-      # out to jupyter-builder from the venv and pip's subprocess does not inherit it.
-      - name: Build the provider extension
-        working-directory: oold-jupyterlite-ai/extension
-        run: |
-          npm ci
-          npm run build
-
       - name: Install
         working-directory: oold-jupyterlite-ai
         run: |
           python -m venv .venv
           .venv/bin/python -m pip install --quiet -e .[build]
-          .venv/bin/python -m pip install --quiet --no-deps ./extension
           npm ci
+
+      # labextension/ is not tracked and pip does not build it: `npm run build` shells out
+      # to jupyter-builder, a console script from the venv, so the venv has to exist first
+      # and be on PATH. pip's own subprocess does not inherit it, which is why this is a
+      # step rather than a build hook.
+      - name: Build the provider extension
+        working-directory: oold-jupyterlite-ai/extension
+        run: |
+          npm ci
+          PATH="$GITHUB_WORKSPACE/oold-jupyterlite-ai/.venv/bin:$PATH" npm run build
+
+      - name: Install the provider extension
+        working-directory: oold-jupyterlite-ai
+        run: .venv/bin/python -m pip install --quiet --no-deps ./extension
 
       - name: Build the reference site
         working-directory: oold-jupyterlite-ai

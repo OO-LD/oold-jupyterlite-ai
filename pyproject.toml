@@ -47,6 +47,10 @@ build = [
     "hatchling",
     "packaging",
     "pip",
+    # Provides the `jupyter-builder` console script that extension/package.json's
+    # build:labextension shells out to. It arrives transitively today; naming it here
+    # keeps the extension buildable if that ever stops being true.
+    "jupyter_builder",
 ]
 # Fixture authoring only, never installed in CI or in the kernel. pymupdf is a 17 MB
 # compiled wheel and is here because pypdf, which the kernel reads pdfs with, cannot
