@@ -84,7 +84,7 @@ class Site:
         env = dict(os.environ)
         env["PATH"] = os.pathsep.join([str(Path(py).parent), sysconfig.get_path("scripts"), env.get("PATH", "")])
 
-        self._build_extension(py)
+        self._build_extension(py, env)
         built = self._build_wheels(py, wheels)
 
         print("== staging contents ==")
@@ -148,15 +148,21 @@ class Site:
         print(f"== done: {output} ==")
         return output
 
-    def _build_extension(self, py: str) -> None:
+    def _build_extension(self, py: str, env: dict[str, str]) -> None:
         if self.extension is None or self.rebuild_extension == "never":
             return
         ext = Path(self.extension).resolve()
         bundle = ext / "labextension"
         if not (ext / "node_modules").is_dir():
+            if not bundle.is_dir():
+                raise SystemExit(
+                    f"{ext} has neither node_modules nor a built labextension. "
+                    "Run `npm ci` there first: the bundle is not tracked and pip does not build it."
+                )
             return
         # extension/pyproject.toml declares shared-data and no build hook, so pip copies
-        # whatever labextension/ holds and never runs tsc. Nothing downstream rebuilds it.
+        # whatever labextension/ holds and never runs tsc. Nothing downstream rebuilds it,
+        # which is why a missing bundle is built here rather than silently shipped empty.
         if self.rebuild_extension == "auto" and bundle.is_dir():
             newest = max(
                 (p.stat().st_mtime for p in [*(ext / "src").rglob("*"), ext / "package.json"] if p.is_file()),
@@ -165,8 +171,10 @@ class Site:
             if newest <= max((p.stat().st_mtime for p in bundle.rglob("*") if p.is_file()), default=0):
                 return
         print("== rebuilding the provider extension ==")
-        _run(["npm", "run", "build"], cwd=ext, shell=os.name == "nt")
-        _run([py, "-m", "pip", "install", "--quiet", "--force-reinstall", "--no-deps", str(ext)])
+        # env carries the venv scripts dir, where `jupyter-builder` lives; npm run build
+        # shells out to it and fails with a bare "command not found" without it.
+        _run(["npm", "run", "build"], cwd=ext, env=env, shell=os.name == "nt")
+        _run([py, "-m", "pip", "install", "--quiet", "--force-reinstall", "--no-deps", str(ext)], env=env)
 
     def _build_wheels(self, py: str, wheels: Path) -> list[Path]:
         built: list[Path] = []

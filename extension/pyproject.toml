@@ -18,6 +18,14 @@ classifiers = [
 ]
 dependencies = ["jupyterlite-ai>=0.20.1,<0.21"]
 
+# No build hook on purpose. `npm run build` shells out to `jupyter-builder`, a console
+# script from a Python package in the build venv, so letting pip drive the npm build means
+# depending on pip's subprocess inheriting that venv's scripts on PATH. It does not, under
+# build isolation or without it. labextension/ is therefore built explicitly before the
+# install, by oold_jupyterlite_ai.site._build_extension locally and by an npm step in CI,
+# and pip only copies the result into shared-data.
+#
+#   npm ci && npm run build && pip install --no-deps ./extension
 [tool.hatch.build.targets.wheel]
 packages = ["oold_azure_providers"]
 
