@@ -1,14 +1,25 @@
 node_modules/
 .venv/
+*.egg-info/
 
-# jupyter lite build output and its doit state
+# jupyter lite build output, its staging tree and its doit state
 _output/
+.build/
 .cache/
 .jupyterlite.doit.db
 
-# wheel built from the local oold checkout
+# wheels built from a local checkout, and the vendored piplite set
 wheels/
+
+# generated: the composed system prompt, written into the staging tree
+overrides.json
 
 # playwright screenshots and json reports
 artifacts/
-overrides.json
+
+# built by npm, not by pip: extension/pyproject.toml has no build hook
+extension/labextension/
+
+# python bytecode
+__pycache__/
+*.py[cod]

@@ -1,0 +1,25 @@
+# The reference site. It is the worked example and the fixture the suites drive, so it
+# turns on everything; a flavour that needs less says less.
+#
+# Paths resolve against this file. Anything with a default comes from the package, so a
+# flavour overrides only what it actually changes.
+
+[site]
+contents = ["src/oold_jupyterlite_ai/site/contents"]
+apps = ["lab"]
+
+[agent]
+capabilities = ["validation", "tabular", "documents", "rdf", "git"]
+# The flavour's own text. Everything between these two is shipped by the package and moves
+# with the kernel API it documents.
+framing = "src/oold_jupyterlite_ai/site/brief/framing.md"
+closing = "src/oold_jupyterlite_ai/site/brief/closing.md"
+# Named repositories are a property of this flavour, not of the git capability.
+extra = ["src/oold_jupyterlite_ai/site/brief/demo-pull.md"]
+
+[wheels]
+oold_src = "../oold-python"
+requirements = "src/oold_jupyterlite_ai/site/piplite-requirements.txt"
+
+[extension]
+path = "extension"

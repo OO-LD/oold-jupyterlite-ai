@@ -56,12 +56,12 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         pass
 
 
-def main():
-    ap = argparse.ArgumentParser()
+def add_arguments(ap: argparse.ArgumentParser) -> None:
     ap.add_argument("--port", type=int, default=8902)
-    ap.add_argument("--dir", default=str(Path(__file__).resolve().parents[1] / "_output"))
-    args = ap.parse_args()
+    ap.add_argument("--dir", default=str(Path.cwd() / "_output"))
 
+
+def main(args):
     handler = functools.partial(Handler, directory=args.dir)
     httpd = http.server.ThreadingHTTPServer(("127.0.0.1", args.port), handler)
     print(f"serving {args.dir} on http://127.0.0.1:{args.port}/", flush=True)
@@ -69,4 +69,6 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    _ap = argparse.ArgumentParser()
+    add_arguments(_ap)
+    main(_ap.parse_args())

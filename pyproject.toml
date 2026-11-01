@@ -1,0 +1,67 @@
+[build-system]
+requires = ["hatchling>=1.21"]
+build-backend = "hatchling.build"
+
+[project]
+name = "oold-jupyterlite-ai"
+description = "An OO-LD schema agent in a static JupyterLite site"
+authors = [{ name = "OpenSemanticWorld", email = "team@opensemantic.world" }]
+readme = "README.md"
+license = "Apache-2.0"
+keywords = ["jupyterlite", "pyodide", "oo-ld", "json-schema", "json-ld", "llm-agent"]
+requires-python = ">=3.10,<4.0"
+version = "0.1.0"
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Framework :: Jupyter",
+    "Framework :: Jupyter :: JupyterLab",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+]
+
+# Deliberately none. oold_agent and oold_git run under Pyodide, where their dependencies
+# are installed at runtime by oold_agent.setup() in an order wheel metadata cannot express:
+# typing-extensions first, then the jsonschema format extras named one by one because
+# piplite resolves no extras. Declaring them here would make a pip install of this package
+# drag a validation stack into an environment that never runs it.
+dependencies = []
+
+[project.optional-dependencies]
+# Everything needed to turn this package into a site. The playground installs exactly this
+# and pins nothing itself, so one resolution decides the Pyodide version that the vendored
+# wheel set is pinned against.
+build = [
+    "jupyterlite-core",
+    "jupyterlite-pyodide-kernel",
+    "jupyter-server",
+    # Pinned exactly: jupyterlite-ai is young, its provider configuration is read from docs
+    # rather than from a stable reference, and the plugin ids the suites assert on move
+    # between releases. Bump deliberately, then re-run tests/providers.mjs.
+    "jupyterlite-ai==0.20.1",
+    # Ships @pyviz/jupyterlab_pyviz, the only renderer for the two
+    # application/vnd.holoviews_*.v0+json mimetypes holoviews and panel emit.
+    "pyviz_comms",
+    "anywidget",
+    "jupyterlab_widgets",
+    "build",
+    "hatchling",
+    "packaging",
+    "pip",
+]
+# Fixture authoring only, never installed in CI or in the kernel. pymupdf is a 17 MB
+# compiled wheel and is here because pypdf, which the kernel reads pdfs with, cannot
+# write one.
+fixtures = ["openpyxl", "xlwt", "python-docx", "python-pptx", "pymupdf"]
+
+[project.scripts]
+oold-lite = "oold_jupyterlite_ai.cli:main"
+
+[project.urls]
+Repository = "https://github.com/OO-LD/oold-jupyterlite-ai"
+
+[tool.hatch.build.targets.wheel]
+sources = ["src"]
+only-include = ["src/oold_agent.py", "src/oold_git.py", "src/oold_jupyterlite_ai"]
+
+[tool.hatch.build.targets.sdist]
+include = ["src", "extension/src", "tests", "scripts", "pyproject.toml", "README.md"]

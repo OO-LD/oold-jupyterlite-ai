@@ -23,7 +23,9 @@ import xlwt
 from openpyxl import Workbook
 from openpyxl.utils import get_column_letter
 
-CONTENTS = Path(__file__).resolve().parents[1] / "contents"
+from .. import SITE
+
+CONTENTS = SITE / "contents"
 
 MEASUREMENTS = [
     ["taken_at", "sensor_id", "measurement_id", "value", "unit", "note"],

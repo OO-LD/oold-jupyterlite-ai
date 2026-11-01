@@ -38,7 +38,10 @@ const ARTIFACTS = `${ROOT}artifacts`;
 // scripts/make_overrides.py strips the file and the build ships that, so the
 // comparison has to strip too. Newlines are normalised because a checkout with
 // core.autocrlf gives node CRLF while python reads the same bytes as LF.
-const BRIEF_TEXT = readFileSync(`${ROOT}contents/OOLD-AGENT.md`, "utf-8").replace(/\r\n/g, "\n").trim();
+const OVERRIDES_PATH = process.env.OVERRIDES ?? `${ROOT}.build/overrides.json`;
+const BRIEF_TEXT = JSON.parse(readFileSync(OVERRIDES_PATH, "utf-8"))[
+  "@jupyternaut/persona:settings-model"
+].systemPrompt.replace(/\r\n/g, "\n").trim();
 
 const CHAT_PANEL = "@jupyterlite/ai:chat-panel";
 const COMPOSER = ".jp-chat-sidepanel-widget textarea:visible";

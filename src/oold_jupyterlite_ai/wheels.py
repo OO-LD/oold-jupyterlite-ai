@@ -74,17 +74,34 @@ def pyodide_packages(version: str, cache_dir: Path) -> dict[str, str]:
     return {normalize(k): v["version"] for k, v in lock["packages"].items()}
 
 
-def agent_seeds(agent_py: Path) -> list[str]:
-    """The REQUIREMENTS tuple of oold_agent, read rather than duplicated.
+def agent_seeds(agent_py: Path | None = None, capabilities: list[str] | None = None) -> list[str]:
+    """What oold_agent.setup() will ask piplite for, read rather than duplicated.
 
     A requirement added there has to be vendored too, so this build fails instead of
     quietly falling back to PyPI on the next cold start.
+
+    Imported, not parsed, because the module ships in this distribution: the capability
+    set is computed and a literal read cannot see through the call. Importing is safe,
+    because oold_agent defers every oold, pyld and rdflib import into the function that
+    needs it and its only import-time effect is setting a default environment variable.
+    The ast path remains for an --agent pointing at a module from somewhere else.
     """
-    tree = ast.parse(agent_py.read_text(encoding="utf-8"))
+    if agent_py is None:
+        import oold_agent
+
+        return list(oold_agent.requirements(capabilities))
+
+    tree = ast.parse(Path(agent_py).read_text(encoding="utf-8"))
     for node in tree.body:
         targets = getattr(node, "targets", [])
         if any(isinstance(t, ast.Name) and t.id == "REQUIREMENTS" for t in targets):
-            return list(ast.literal_eval(node.value))
+            try:
+                return list(ast.literal_eval(node.value))
+            except ValueError:
+                raise SystemExit(
+                    f"REQUIREMENTS in {agent_py} is computed, not a literal; "
+                    "drop --agent so it is imported instead"
+                ) from None
     raise SystemExit(f"no REQUIREMENTS assignment in {agent_py}")
 
 
@@ -145,7 +162,7 @@ def cmd_resolve(args: argparse.Namespace) -> int:
     local = {normalize(n) for n in args.local}
     bundled = bundled_wheels(args.bundled)
 
-    queue = [*BUNDLED_SEEDS, *EXTRA_SEEDS, *agent_seeds(Path(args.agent))]
+    queue = [*BUNDLED_SEEDS, *EXTRA_SEEDS, *agent_seeds(args.agent, args.capabilities)]
     seen: set[str] = set()
     resolved: dict[str, str] = {}
     from_pyodide: dict[str, str] = {}
@@ -197,7 +214,7 @@ def cmd_verify(args: argparse.Namespace) -> int:
             problems.append(f"{wheel.name} is not a pure-python wheel")
     staged.update(bundled_wheels(args.bundled))
 
-    queue = [*BUNDLED_SEEDS, *EXTRA_SEEDS, *agent_seeds(Path(args.agent))]
+    queue = [*BUNDLED_SEEDS, *EXTRA_SEEDS, *agent_seeds(args.agent, args.capabilities)]
     seen: set[str] = set()
     while queue:
         requirement = queue.pop(0)
@@ -232,19 +249,25 @@ def cmd_verify(args: argparse.Namespace) -> int:
     return 0
 
 
-def main() -> int:
-    ap = argparse.ArgumentParser()
+def add_arguments(ap: argparse.ArgumentParser) -> None:
     ap.add_argument("mode", choices=["resolve", "verify"])
     ap.add_argument("--python", default=sys.executable)
     ap.add_argument("--pyodide-version", required=True)
     ap.add_argument("--cache", required=True)
-    ap.add_argument("--agent", required=True)
+    # The seed list is what oold_agent.setup() installs. Left unset it is imported, which
+    # is the usual case; a caller profiling a module from elsewhere passes its path.
+    ap.add_argument("--agent", default=None)
+    ap.add_argument("--capability", action="append", dest="capabilities", default=None)
     ap.add_argument("--dir", action="append", default=[])
     ap.add_argument("--bundled", action="append", default=[])
     ap.add_argument("--local", action="append", default=["oold"])
-    args = ap.parse_args()
+
+
+def main(args: argparse.Namespace) -> int:
     return cmd_resolve(args) if args.mode == "resolve" else cmd_verify(args)
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    _ap = argparse.ArgumentParser()
+    add_arguments(_ap)
+    raise SystemExit(main(_ap.parse_args()))

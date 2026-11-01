@@ -24,7 +24,9 @@ from docx import Document
 from pptx import Presentation
 from pptx.util import Inches
 
-CONTENTS = Path(__file__).resolve().parents[1] / "contents"
+from .. import SITE
+
+CONTENTS = SITE / "contents"
 
 TITLE = "Measurement protocol"
 METHOD = (

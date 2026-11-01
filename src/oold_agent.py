@@ -122,35 +122,87 @@ _RDF_TYPE = "http://www.w3.org/1999/02/22-rdf-syntax-ns#type"
 #: compiled wheel that can only come from the CDN, which is a cold start the whole vendored
 #: set otherwise avoids. Column detection is the agent's job here, and it does it from the
 #: page text; see :data:`PDF_TABLE_HINT`, which every pdf read says out loud.
-REQUIREMENTS = (
-    "jsonschema>=4.25",
-    "referencing>=0.30",
-    "click>=8.1",
-    "fqdn",
-    "idna",
-    "isoduration",
-    "jsonpointer>1.13",
-    "rfc3339-validator",
-    "rfc3986-validator>0.1.0",
-    "rfc3987-syntax>=1.1.0",
-    "uri-template",
-    "webcolors>=24.6.0",
-    "python-calamine",
-    "openpyxl",
-    "pypdf",
-    "python-docx",
-    "python-pptx",
-)
+#: What each capability costs the kernel. A site that never opens a spreadsheet should not
+#: vendor a spreadsheet reader, and a build that leaves one out must not have :func:`setup`
+#: ask for it: with PyPI unreachable the install fails and the whole cell reports it.
+#: ``rdf`` and ``git`` are listed because they are selectable capabilities, not because they
+#: add anything here: rdflib and pyld arrive inside the oold wheel, and ``oold_git`` asks for
+#: requests in the cell that imports it, where Pyodide can see the import.
+CAPABILITY_REQUIREMENTS: dict[str, tuple[str, ...]] = {
+    "validation": (
+        "jsonschema>=4.25",
+        "referencing>=0.30",
+        "click>=8.1",
+        "fqdn",
+        "idna",
+        "isoduration",
+        "jsonpointer>1.13",
+        "rfc3339-validator",
+        "rfc3986-validator>0.1.0",
+        "rfc3987-syntax>=1.1.0",
+        "uri-template",
+        "webcolors>=24.6.0",
+    ),
+    "tabular": ("python-calamine", "openpyxl"),
+    "documents": ("pypdf", "python-docx", "python-pptx"),
+    "rdf": (),
+    "git": (),
+}
+
+#: Where the build records which capabilities this site was assembled with. Absent in a
+#: desktop checkout and in any site built before capabilities existed, which is why its
+#: absence means "all of them" rather than "none".
+CAPABILITIES_FILE = "oold-capabilities.json"
 
 
-async def setup(verbose: bool = True) -> dict[str, Any]:
+def requirements(capabilities: Iterable[str] | None = None) -> tuple[str, ...]:
+    """Flatten the selected capabilities into one install list, order preserved."""
+    if capabilities is None:
+        capabilities = CAPABILITY_REQUIREMENTS
+    found: list[str] = []
+    for name in capabilities:
+        if name not in CAPABILITY_REQUIREMENTS:
+            known = ", ".join(sorted(CAPABILITY_REQUIREMENTS))
+            raise ValueError(f"unknown capability {name!r}; have: {known}")
+        found += [r for r in CAPABILITY_REQUIREMENTS[name] if r not in found]
+    return tuple(found)
+
+
+def _declared_capabilities() -> list[str] | None:
+    """What the build said this site ships, or None when it said nothing."""
+    for base in (Path.cwd(), Path(__file__).resolve().parent):
+        path = base / CAPABILITIES_FILE
+        if path.is_file():
+            try:
+                found = json.loads(path.read_text(encoding="utf-8"))
+            except Exception:
+                return None
+            if isinstance(found, list) and all(isinstance(x, str) for x in found):
+                return found
+    return None
+
+
+#: Everything, which is what a site gets unless its build narrowed the set.
+REQUIREMENTS = requirements()
+
+
+async def setup(verbose: bool = True, capabilities: Iterable[str] | None = None) -> dict[str, Any]:
     """Install oold and its validation dependencies into the running kernel.
 
     Returns ``{"oold": version, "python": version, "installed": [...], "failed": [...]}``.
     Outside Pyodide there is no ``piplite`` and nothing is installed; whatever the interpreter
     already has is reported instead, so the same module works in a desktop checkout.
     """
-    report: dict[str, Any] = {"installed": [], "failed": [], "python": sys.version.split()[0]}
+    if capabilities is None:
+        capabilities = _declared_capabilities()
+    wanted = requirements(capabilities)
+
+    report: dict[str, Any] = {
+        "installed": [],
+        "failed": [],
+        "python": sys.version.split()[0],
+        "capabilities": sorted(capabilities) if capabilities is not None else sorted(CAPABILITY_REQUIREMENTS),
+    }
 
     try:
         import piplite
@@ -170,7 +222,7 @@ async def setup(verbose: bool = True) -> dict[str, Any]:
         # import appears in the cell source it is about to run. An import inside a module on
         # the contents drive is invisible to that scan, so it is installed like any other
         # requirement instead.
-        for requirement in ("pyodide-http", "oold", *REQUIREMENTS):
+        for requirement in ("pyodide-http", "oold", *wanted):
             try:
                 await piplite.install(requirement, keep_going=True)
                 report["installed"].append(requirement)
