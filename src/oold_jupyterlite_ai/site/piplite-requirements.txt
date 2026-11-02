@@ -16,15 +16,17 @@
 # different reason: it is a 17.3 MB compiled wasm wheel that could only come from the CDN,
 # so the pdf reader is pypdf, which vendors as pure python and extracts text only.
 #
-# Regenerate after changing oold_agent.REQUIREMENTS or bumping the pyodide kernel:
+# Regenerate after changing oold_agent.CAPABILITY_REQUIREMENTS or bumping the pyodide
+# kernel. The seed list is imported from oold_agent, so there is no --agent to pass:
 #
-#   .venv/Scripts/python.exe scripts/resolve_wheels.py resolve \
-#     --pyodide-version "$(.venv/Scripts/python.exe -c 'from jupyterlite_pyodide_kernel.constants import PYODIDE_VERSION; print(PYODIDE_VERSION)')" \
-#     --cache .cache --agent contents/oold_agent.py \
+#   PY=.venv/Scripts/python.exe
+#   $PY -m oold_jupyterlite_ai.cli wheels resolve \
+#     --pyodide-version "$($PY -c 'from jupyterlite_pyodide_kernel.constants import PYODIDE_VERSION; print(PYODIDE_VERSION)')" \
+#     --cache .cache \
 #     --bundled .venv/share/jupyter/labextensions/@jupyterlite/pyodide-kernel-extension/static/pypi
 #
-# scripts/build.sh verifies the staged set against the lock on every build, so a stale
-# list fails there rather than silently going back to PyPI at runtime.
+# Every build verifies the staged set against the lock, so a stale list fails there
+# rather than silently going back to PyPI at runtime.
 
 argcomplete==3.7.2
 arrow==1.4.0

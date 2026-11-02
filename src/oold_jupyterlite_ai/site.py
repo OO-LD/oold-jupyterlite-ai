@@ -167,10 +167,11 @@ class Site:
         # whatever labextension/ holds and never runs tsc. Nothing downstream rebuilds it,
         # which is why a missing bundle is built here rather than silently shipped empty.
         if self.rebuild_extension == "auto" and bundle.is_dir():
-            newest = max(
-                (p.stat().st_mtime for p in [*(ext / "src").rglob("*"), ext / "package.json"] if p.is_file()),
-                default=0,
-            )
+            # schema/ counts: package.json declares schemaDir, and plugin.json is compiled
+            # into labextension/schemas/. Leaving it out meant a settings-schema edit never
+            # triggered a rebuild and the site kept the old provider settings silently.
+            watched = [*(ext / "src").rglob("*"), *(ext / "schema").rglob("*"), ext / "package.json"]
+            newest = max((p.stat().st_mtime for p in watched if p.is_file()), default=0)
             if newest <= max((p.stat().st_mtime for p in bundle.rglob("*") if p.is_file()), default=0):
                 return
         print("== rebuilding the provider extension ==")

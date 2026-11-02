@@ -29,7 +29,9 @@ kernel has no use for.
 ```bash
 python -m venv .venv
 .venv/bin/python -m pip install -e .[build]
-(cd extension && npm ci && npm run build)
+# The venv has to come first and be on PATH: npm run build shells out to
+# jupyter-builder, which the install above provides.
+(cd extension && npm ci && PATH="$PWD/../.venv/bin:$PATH" npm run build)
 .venv/bin/python -m pip install --no-deps ./extension
 .venv/bin/python -m oold_jupyterlite_ai.cli build
 .venv/bin/python -m oold_jupyterlite_ai.cli serve --port 8903
@@ -57,11 +59,16 @@ framing = "brief/framing.md"
 skills  = "skills"
 ```
 
-`capabilities` picks which brief fragments are included, which packages `setup()` installs
-and which wheels are vendored, together. A `["validation", "tabular"]` flavour vendors 14
-packages instead of 17 and ships a 3.8 KB prompt instead of 7.9 KB, with no `pypdf` or
-`oold_git` sections in it. The file listing in the prompt is generated from the contents
-being built, so a brief cannot name a file the site does not ship.
+`capabilities` picks which brief fragments are included and which packages `setup()`
+installs in the kernel, together, so the agent is never told about something that will not
+be there. A `["validation", "tabular"]` flavour installs 14 packages instead of 17 and
+ships a 3.8 KB prompt instead of 7.9 KB, with no `pypdf` or `oold_git` sections in it. The
+file listing in the prompt is generated from the contents being built, so a brief cannot
+name a file the site does not ship.
+
+It does not change what is vendored: `[wheels] requirements` is staged whole, so a
+narrowed flavour still carries the wheels it will not install. Point that key at your own
+file to shrink the site itself.
 
 Anything the TOML cannot express is a reason to use the API directly:
 

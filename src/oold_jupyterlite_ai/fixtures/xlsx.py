@@ -4,7 +4,7 @@ Binary fixtures that cannot be read in a diff have to be regenerable, otherwise 
 can tell later what a test is actually asserting against. Run after changing anything
 the assertions in tests/kernel-api.mjs pin:
 
-    .venv/Scripts/python.exe scripts/make_xlsx_fixtures.py
+    .venv/Scripts/python.exe oold-lite fixtures xlsx
 
 fixture_measurements.xlsx carries the same table as fixture_measurements.csv, cell for
 cell, so the suite can assert that a sheet and a CSV of the same data profile alike.

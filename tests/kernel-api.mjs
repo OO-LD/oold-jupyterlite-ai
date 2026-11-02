@@ -1,6 +1,6 @@
 // Tier 2: the kernel-side Python API an LLM agent calls, driven through the real
 // kernel protocol and independent of any model. Every entry point of
-// contents/oold_agent.py is exercised with a positive and a negative case.
+// src/oold_agent.py is exercised with a positive and a negative case.
 //
 // Assertions are line-exact against stream output. A traceback echoes the failing
 // source line, so a substring search over all output matches the print() call

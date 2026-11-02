@@ -122,9 +122,10 @@ _RDF_TYPE = "http://www.w3.org/1999/02/22-rdf-syntax-ns#type"
 #: compiled wheel that can only come from the CDN, which is a cold start the whole vendored
 #: set otherwise avoids. Column detection is the agent's job here, and it does it from the
 #: page text; see :data:`PDF_TABLE_HINT`, which every pdf read says out loud.
-#: What each capability costs the kernel. A site that never opens a spreadsheet should not
-#: vendor a spreadsheet reader, and a build that leaves one out must not have :func:`setup`
-#: ask for it: with PyPI unreachable the install fails and the whole cell reports it.
+#: What each capability costs the kernel. This decides what :func:`setup` installs, not
+#: what the site vendors: a narrowed build still carries the wheels, it just does not ask
+#: for them. Asking for one a site did not vendor is the failure this prevents, because
+#: with PyPI unreachable the install fails and the whole cell reports it.
 #: ``rdf`` and ``git`` are listed because they are selectable capabilities, not because they
 #: add anything here: rdflib and pyld arrive inside the oold wheel, and ``oold_git`` asks for
 #: requests in the cell that imports it, where Pyodide can see the import.
@@ -195,6 +196,10 @@ async def setup(verbose: bool = True, capabilities: Iterable[str] | None = None)
     """
     if capabilities is None:
         capabilities = _declared_capabilities()
+    # Materialised before it is read twice: requirements() iterates it and the report
+    # sorts it, and a generator would leave the second read empty.
+    if capabilities is not None:
+        capabilities = list(capabilities)
     wanted = requirements(capabilities)
 
     report: dict[str, Any] = {

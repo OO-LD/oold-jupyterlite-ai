@@ -39,7 +39,7 @@ const SUITE_TIMEOUT = Number(process.env.SUITE_TIMEOUT ?? 3600000);
 // second into a relative path that resolves against the cwd.
 const ROOT = fileURLToPath(new globalThis.URL("../", import.meta.url));
 const ARTIFACTS = `${ROOT}artifacts`;
-// scripts/make_overrides.py strips the file and the build ships that, so the
+// the build strips the file and the build ships that, so the
 // comparison has to strip too. Newlines are normalised because a checkout with
 // core.autocrlf gives node CRLF while python reads the same bytes as LF.
 const OVERRIDES_PATH = process.env.OVERRIDES ?? `${ROOT}.build/overrides.json`;

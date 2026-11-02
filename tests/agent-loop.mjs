@@ -53,7 +53,7 @@ const EXECUTE_IN_KERNEL = "jupyterlab-ai-commands:execute-in-kernel";
 // reach a later request by travelling through the kernel and back.
 const NONCE = `nonce-${randomUUID().slice(0, 13)}`;
 
-// scripts/make_overrides.py strips the file and the build ships that, so the
+// the build strips the file and the build ships that, so the
 // comparison has to strip too. Newlines are normalised because a checkout with
 // core.autocrlf gives node CRLF while python reads the same bytes as LF.
 // The build composes the prompt from capability fragments and a flavour's own framing, so
@@ -295,8 +295,8 @@ if (!marker(setup, "SETUP validation True")) {
 
 // --------------------------------------------------- 2. the shipped brief
 section("TEST 2: the site ships the brief as the system prompt");
-// Read before anything in this suite writes a setting. scripts/make_overrides.py
-// turns contents/OOLD-AGENT.md into overrides.json, jupyter lite build puts it in
+// Read before anything in this suite writes a setting. the build
+// turns the composed brief into overrides.json, jupyter lite build puts it in
 // settingsOverrides and the JupyterLite setting manager patches it over the
 // schema default. If any of that stops working the agent gets the stock
 // Jupyternaut prompt and the whole brief is dead weight.

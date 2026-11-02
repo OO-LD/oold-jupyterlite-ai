@@ -48,6 +48,7 @@ def main(argv: list[str] | None = None) -> int:
 
 def _build(args: argparse.Namespace) -> int:
     from . import config
+    from .briefs import Brief
 
     path = args.config or config.find()
     if path is None:
@@ -63,6 +64,12 @@ def _build(args: argparse.Namespace) -> int:
         site.apps = args.apps
     if args.capabilities:
         site.capabilities = args.capabilities
+        # config.load froze the list into the Brief, and render_brief reads the Brief, not
+        # the Site. Without this the wheel check and oold-capabilities.json narrow while
+        # the prompt still documents everything, telling the agent it can do things
+        # setup() will not install.
+        if isinstance(site.brief, Brief):
+            site.brief.capabilities = tuple(args.capabilities)
     if args.rebuild_extension is not None:
         site.rebuild_extension = args.rebuild_extension
 

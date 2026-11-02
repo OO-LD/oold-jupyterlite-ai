@@ -4,7 +4,7 @@ Binary fixtures that cannot be read in a diff have to be regenerable, otherwise 
 can tell later what a test is actually asserting against. Run after changing anything
 the assertions in tests/kernel-api.mjs pin:
 
-    .venv/Scripts/python.exe scripts/make_doc_fixtures.py
+    .venv/Scripts/python.exe oold-lite fixtures docs
 
 The same reading table goes into the docx, the pptx and the pdf, so the suite can assert
 that one table profiles alike whatever carried it, the way fixture_measurements.xlsx and

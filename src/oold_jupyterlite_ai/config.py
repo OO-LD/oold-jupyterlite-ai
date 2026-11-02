@@ -36,12 +36,22 @@ from .site import Site
 FILENAME = "oold-lite.toml"
 
 
+#: What a value has to look like to be read as a file rather than used as prompt text.
+#: Without this test a renamed `brief/closing.md` would silently become the closing
+#: paragraph of the deployed prompt, with the literal string in place of the file.
+_LOOKS_LIKE_PATH = (".md", ".txt")
+
+
 def _text(root: Path, value: str | None) -> str:
-    """A key is a path when it resolves to a file, and literal text otherwise."""
+    """A key is a path when it is spelled like one, and literal text otherwise."""
     if value is None:
         return ""
-    candidate = root / value
-    return candidate.read_text(encoding="utf-8") if candidate.is_file() else value
+    if "\n" not in value and value.endswith(_LOOKS_LIKE_PATH):
+        candidate = root / value
+        if not candidate.is_file():
+            raise SystemExit(f"{value!r} looks like a file but there is nothing at {candidate}")
+        return candidate.read_text(encoding="utf-8")
+    return value
 
 
 def _oold_src(root: Path, wheels_cfg: dict) -> Path | None:
@@ -72,9 +82,11 @@ def load(path: Path) -> Site:
     capabilities = list(agent_cfg.get("capabilities", briefs.ALL))
 
     brief = None
-    if "framing" in agent_cfg:
+    # Any of the three composes a brief. Keying only on `framing` meant a config that set
+    # just `closing` wrote no overrides at all and shipped the stock Jupyternaut prompt.
+    if agent_cfg.keys() & {"framing", "closing", "extra"}:
         brief = briefs.compose(
-            framing=_text(root, agent_cfg["framing"]),
+            framing=_text(root, agent_cfg.get("framing")),
             capabilities=capabilities,
             closing=_text(root, agent_cfg.get("closing")),
             extra=[_text(root, item) for item in agent_cfg.get("extra", [])],
