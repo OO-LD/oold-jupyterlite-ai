@@ -31,12 +31,20 @@ def fragment(name: str) -> str:
     return path.read_text(encoding="utf-8").strip()
 
 
+#: Staged by the build and of no use to the agent. Naming them in the prompt only invites
+#: it to open a file that tells it nothing about the data.
+HIDDEN = {"oold-capabilities.json"}
+
+
 def listing(contents: Path, limit: int = 40) -> str:
     """One line naming what is on the drive, so the agent can open it without guessing."""
     names = sorted(
         p.name
         for p in contents.iterdir()
-        if p.is_file() and not p.name.startswith(".") and p.suffix != ".py"
+        if p.is_file()
+        and not p.name.startswith(".")
+        and p.suffix != ".py"
+        and p.name not in HIDDEN
     )
     if not names:
         return ""
